@@ -1,6 +1,10 @@
 import "server-only";
 
+import { getManagementLeaveRequests, getManagementScope } from "@/lib/db/management-leave";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { UserRole } from "@/types/auth";
+import type { EmployeeLeaveRequest } from "@/types/leave";
+import type { ManagementLeaveRequest } from "@/types/leave";
 
 export type LeaveBalanceSummary = {
   code: "VACATION" | "SICK";
@@ -14,6 +18,8 @@ export type EmployeeDashboardData = {
   balances: LeaveBalanceSummary[];
   pendingRequests: number;
   approvedRequests: number;
+  upcomingLeave: number;
+  recentRequests: EmployeeLeaveRequest[];
 };
 
 export type AdminDashboardData = {
@@ -21,6 +27,7 @@ export type AdminDashboardData = {
   employeesOnLeave: number;
   totalEmployees: number;
   requestsThisMonth: number;
+  pendingRequests: ManagementLeaveRequest[];
 };
 
 export type DashboardDataResult<T> = {
@@ -47,6 +54,8 @@ const EMPLOYEE_DEMO_DATA: EmployeeDashboardData = {
   ],
   pendingRequests: 1,
   approvedRequests: 2,
+  upcomingLeave: 0,
+  recentRequests: [],
 };
 
 const ADMIN_DEMO_DATA: AdminDashboardData = {
@@ -54,12 +63,27 @@ const ADMIN_DEMO_DATA: AdminDashboardData = {
   employeesOnLeave: 0,
   totalEmployees: 4,
   requestsThisMonth: 5,
+  pendingRequests: [],
 };
 
 type RawBalance = {
   allocated_days: number | string;
   used_days: number | string;
   remaining_days: number | string;
+  leave_types:
+    | { code: string; name: string }
+    | { code: string; name: string }[];
+};
+
+type RawDashboardRequest = {
+  id: string;
+  start_date: string;
+  end_date: string;
+  number_of_days: number | string;
+  reason: string;
+  status: EmployeeLeaveRequest["status"];
+  reviewer_remarks: string | null;
+  created_at: string;
   leave_types:
     | { code: string; name: string }
     | { code: string; name: string }[];
@@ -94,7 +118,19 @@ export async function getEmployeeDashboardData(
     if (employeeResult.error || !employee) throw new Error("Employee profile unavailable");
 
     const employeeId = employee.id;
-    const [balancesResult, pendingResult, approvedResult] = await Promise.all([
+    const today = new Intl.DateTimeFormat("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      timeZone: "Asia/Manila",
+    }).format(new Date());
+    const [
+      balancesResult,
+      pendingResult,
+      approvedResult,
+      upcomingResult,
+      recentResult,
+    ] = await Promise.all([
       supabase
         .from("leave_balances")
         .select("allocated_days, used_days, remaining_days, leave_types!inner(code, name)")
@@ -110,9 +146,29 @@ export async function getEmployeeDashboardData(
         .select("id", { count: "exact", head: true })
         .eq("employee_id", employeeId)
         .eq("status", "APPROVED"),
+      supabase
+        .from("leave_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("employee_id", employeeId)
+        .eq("status", "APPROVED")
+        .gte("start_date", today),
+      supabase
+        .from("leave_requests")
+        .select(
+          "id, start_date, end_date, number_of_days, reason, status, reviewer_remarks, created_at, leave_types!inner(code, name)",
+        )
+        .eq("employee_id", employeeId)
+        .order("created_at", { ascending: false })
+        .limit(5),
     ]);
 
-    if (balancesResult.error || pendingResult.error || approvedResult.error) {
+    if (
+      balancesResult.error ||
+      pendingResult.error ||
+      approvedResult.error ||
+      upcomingResult.error ||
+      recentResult.error
+    ) {
       throw new Error("Employee dashboard data unavailable");
     }
 
@@ -137,61 +193,95 @@ export async function getEmployeeDashboardData(
 
     if (balances.length < 2) throw new Error("Required leave balances unavailable");
 
+    const recentRequests = (recentResult.data as unknown as RawDashboardRequest[]).map(
+      (request): EmployeeLeaveRequest => {
+        const leaveType = Array.isArray(request.leave_types)
+          ? request.leave_types[0]
+          : request.leave_types;
+
+        return {
+          id: request.id,
+          leaveTypeName: leaveType.name,
+          leaveTypeCode: leaveType.code,
+          startDate: request.start_date,
+          endDate: request.end_date,
+          numberOfDays: numeric(request.number_of_days),
+          reason: request.reason,
+          status: request.status,
+          reviewerRemarks: request.reviewer_remarks,
+          createdAt: request.created_at,
+        };
+      },
+    );
+
     return preparedResult({
       balances,
       pendingRequests: pendingResult.count ?? 0,
       approvedRequests: approvedResult.count ?? 0,
+      upcomingLeave: upcomingResult.count ?? 0,
+      recentRequests,
     });
   } catch {
     return unavailableResult(EMPLOYEE_DEMO_DATA);
   }
 }
 
-export async function getAdminDashboardData(): Promise<
+export async function getAdminDashboardData(
+  userId: string,
+  role: UserRole,
+): Promise<
   DashboardDataResult<AdminDashboardData>
 > {
   const supabase = getSupabaseAdminClient();
   if (!supabase) return preparedResult(ADMIN_DEMO_DATA);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const monthStart = `${today.slice(0, 7)}-01T00:00:00.000Z`;
+  const today = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "Asia/Manila",
+  }).format(new Date());
 
   try {
-    const [employeesResult, pendingResult, onLeaveResult, monthlyResult] = await Promise.all([
-      supabase
-        .from("employees")
-        .select("id", { count: "exact", head: true })
-        .eq("employment_status", "ACTIVE"),
-      supabase
-        .from("leave_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "PENDING"),
-      supabase
-        .from("leave_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "APPROVED")
-        .lte("start_date", today)
-        .gte("end_date", today),
-      supabase
-        .from("leave_requests")
-        .select("id", { count: "exact", head: true })
-        .gte("created_at", monthStart),
-    ]);
+    const scope = await getManagementScope(userId, role);
+    const requests = await getManagementLeaveRequests(userId, role);
+    if (!scope || !requests) throw new Error("Management scope unavailable");
 
-    if (
-      employeesResult.error ||
-      pendingResult.error ||
-      onLeaveResult.error ||
-      monthlyResult.error
-    ) {
+    let employeesQuery = supabase
+      .from("employees")
+      .select("id", { count: "exact", head: true })
+      .eq("employment_status", "ACTIVE");
+
+    if (scope.departmentId) {
+      employeesQuery = employeesQuery.eq("department_id", scope.departmentId);
+    }
+
+    const employeesResult = await employeesQuery;
+    if (employeesResult.error) {
       throw new Error("Management dashboard data unavailable");
     }
 
+    const pendingRequests = requests.filter((request) => request.status === "PENDING");
+    const employeesOnLeave = new Set(
+      requests
+        .filter(
+          (request) =>
+            request.status === "APPROVED" &&
+            request.startDate <= today &&
+            request.endDate >= today,
+        )
+        .map((request) => request.employeeId),
+    ).size;
+    const requestsThisMonth = requests.filter(
+      (request) => request.createdAt.slice(0, 7) === today.slice(0, 7),
+    ).length;
+
     return preparedResult({
-      pendingApprovals: pendingResult.count ?? 0,
-      employeesOnLeave: onLeaveResult.count ?? 0,
+      pendingApprovals: pendingRequests.length,
+      employeesOnLeave,
       totalEmployees: employeesResult.count ?? 0,
-      requestsThisMonth: monthlyResult.count ?? 0,
+      requestsThisMonth,
+      pendingRequests: pendingRequests.slice(0, 5),
     });
   } catch {
     return unavailableResult(ADMIN_DEMO_DATA);

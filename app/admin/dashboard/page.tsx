@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
+  ArrowRight,
   CalendarClock,
   CalendarOff,
   CheckCircle2,
@@ -10,14 +12,16 @@ import {
 
 import { AccountOverview } from "@/components/dashboard/account-overview";
 import { DatabaseNotice } from "@/components/dashboard/database-notice";
+import { LeaveStatusBadge } from "@/components/leave/status-badge";
 import { requireUser } from "@/lib/auth/guards";
 import { getAdminDashboardData } from "@/lib/db/dashboard-data";
+import { formatLeaveDateRange } from "@/lib/leave/dates";
 
 export const metadata: Metadata = { title: "Management Dashboard" };
 
 export default async function AdminDashboardPage() {
   const user = await requireUser(["ADMIN", "SUPERVISOR"]);
-  const dashboardResult = await getAdminDashboardData();
+  const dashboardResult = await getAdminDashboardData(user.id, user.role);
   const summary = dashboardResult.data;
   const isAdmin = user.role === "ADMIN";
   const dateLabel = new Intl.DateTimeFormat("en-PH", {
@@ -72,7 +76,7 @@ export default async function AdminDashboardPage() {
             <span className="metric-icon metric-icon-warm"><ClipboardList size={20} /></span>
             <span className="metric-label">Pending Approvals</span>
             <strong className="metric-value">{summary.pendingApprovals}</strong>
-            <span className="metric-footnote">Prepared for the approval phase</span>
+            <span className="metric-footnote">Awaiting management review</span>
           </article>
           <article className="metric-card request-metric-card">
             <span className="metric-icon"><CalendarOff size={20} /></span>
@@ -92,6 +96,45 @@ export default async function AdminDashboardPage() {
             <strong className="metric-value">{summary.requestsThisMonth}</strong>
             <span className="metric-footnote">Across all request statuses</span>
           </article>
+        </div>
+      </section>
+
+      <section className="management-pending-section" aria-labelledby="pending-requests-title">
+        <div className="section-heading-row">
+          <div>
+            <p className="section-kicker">Action required</p>
+            <h2 id="pending-requests-title">Pending leave requests</h2>
+          </div>
+          <Link href="/admin/requests?status=PENDING" className="section-link">
+            View all <ArrowRight size={15} />
+          </Link>
+        </div>
+
+        <div className="management-pending-card">
+          {summary.pendingRequests.length === 0 ? (
+            <div className="compact-empty-state">
+              <ClipboardList size={22} />
+              <span>No pending leave requests in your scope.</span>
+            </div>
+          ) : (
+            summary.pendingRequests.map((request) => (
+              <article className="management-pending-row" key={request.id}>
+                <span className="recent-request-icon"><ClipboardList size={18} /></span>
+                <div className="management-request-person">
+                  <strong>{request.employeeName}</strong>
+                  <span>{request.departmentName} · {request.employeeNumber}</span>
+                </div>
+                <div className="management-request-leave">
+                  <strong>{request.leaveTypeName}</strong>
+                  <span>{formatLeaveDateRange(request.startDate, request.endDate)} · {request.numberOfDays} {request.numberOfDays === 1 ? "day" : "days"}</span>
+                </div>
+                <LeaveStatusBadge status={request.status} />
+                <Link href={`/admin/requests/${request.id}`} className="review-link">
+                  Review <ArrowRight size={14} />
+                </Link>
+              </article>
+            ))
+          )}
         </div>
       </section>
 

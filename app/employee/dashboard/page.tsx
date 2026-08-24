@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
+  ArrowRight,
   CalendarCheck2,
+  CalendarClock,
   CheckCircle2,
   CircleCheckBig,
   Clock3,
@@ -10,15 +13,23 @@ import {
 
 import { AccountOverview } from "@/components/dashboard/account-overview";
 import { DatabaseNotice } from "@/components/dashboard/database-notice";
+import { LeaveStatusBadge } from "@/components/leave/status-badge";
 import { requireUser } from "@/lib/auth/guards";
 import { getEmployeeDashboardData } from "@/lib/db/dashboard-data";
+import { formatLeaveDateRange } from "@/lib/leave/dates";
 
 export const metadata: Metadata = { title: "Employee Dashboard" };
 
 export default async function EmployeeDashboardPage() {
   const user = await requireUser(["EMPLOYEE"]);
   const dashboardResult = await getEmployeeDashboardData(user.id);
-  const { balances, pendingRequests, approvedRequests } = dashboardResult.data;
+  const {
+    balances,
+    pendingRequests,
+    approvedRequests,
+    upcomingLeave,
+    recentRequests,
+  } = dashboardResult.data;
   const dateLabel = new Intl.DateTimeFormat("en-PH", {
     weekday: "long",
     day: "numeric",
@@ -62,7 +73,7 @@ export default async function EmployeeDashboardPage() {
           <span className="summary-year">2026 balances</span>
         </div>
 
-        <div className="dashboard-metric-grid employee-metric-grid">
+        <div className="dashboard-metric-grid employee-metric-grid employee-phase-two-metrics">
           {balances.map((balance) => {
             const Icon = balance.code === "VACATION" ? Palmtree : HeartPulse;
             const percentage = Math.round(
@@ -100,6 +111,48 @@ export default async function EmployeeDashboardPage() {
             <strong className="metric-value">{approvedRequests}</strong>
             <span className="metric-footnote">Approved in the demo data</span>
           </article>
+
+          <article className="metric-card request-metric-card">
+            <span className="metric-icon"><CalendarClock size={20} /></span>
+            <span className="metric-label">Upcoming Leave</span>
+            <strong className="metric-value">{upcomingLeave}</strong>
+            <span className="metric-footnote">Approved future requests</span>
+          </article>
+        </div>
+      </section>
+
+      <section className="recent-requests-section" aria-labelledby="recent-requests-title">
+        <div className="section-heading-row">
+          <div>
+            <p className="section-kicker">Latest activity</p>
+            <h2 id="recent-requests-title">Recent leave requests</h2>
+          </div>
+          <Link href="/employee/leave/requests" className="section-link">
+            View all <ArrowRight size={15} />
+          </Link>
+        </div>
+        <div className="recent-requests-card">
+          {recentRequests.length === 0 ? (
+            <div className="compact-empty-state">
+              <CalendarCheck2 size={22} />
+              <span>No leave requests yet.</span>
+              <Link href="/employee/leave/new">File your first request</Link>
+            </div>
+          ) : (
+            recentRequests.map((request) => (
+              <article className="recent-request-row" key={request.id}>
+                <span className="recent-request-icon"><CalendarCheck2 size={18} /></span>
+                <div className="recent-request-main">
+                  <strong>{request.leaveTypeName}</strong>
+                  <span>{formatLeaveDateRange(request.startDate, request.endDate)}</span>
+                </div>
+                <span className="recent-request-days">
+                  {request.numberOfDays} {request.numberOfDays === 1 ? "day" : "days"}
+                </span>
+                <LeaveStatusBadge status={request.status} />
+              </article>
+            ))
+          )}
         </div>
       </section>
 
