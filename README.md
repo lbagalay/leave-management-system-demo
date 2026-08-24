@@ -1,20 +1,21 @@
 # Leave Management System Demo
 
-Phase 1 (Foundation) of the management-ready Leave Management System prototype.
+Phase 5 (Polish, Reliability & Support) of the management-ready Leave Management System prototype.
 
-## Included in Phase 1
+## Included through Phase 5
 
 - Next.js App Router, React, TypeScript, and Tailwind CSS foundation
 - Responsive shared dashboard shell and role-aware navigation
 - Signed, HTTP-only demo sessions with server-side role enforcement
-- Employee, Supervisor, and Admin foundation dashboards
-- Phase 1 placeholder routes for employee leave/profile and management areas
+- Employee, Supervisor, and Admin dashboards backed by live demo data
+- Employee leave submission, request history, cancellation, and profile views
+- Supervisor/Admin approval and rejection with atomic balance updates
+- Employee directory, employee details, filters, and management reports
+- System status, support coverage, and issue reporting
 - Supabase browser/server client configuration
-- Supabase-backed dashboard summaries with deterministic offline demo fallback
+- Supabase-backed workflows with safe loading, empty, and unavailable states
 - PostgreSQL schema, indexes, validation constraints, triggers, and row-level security policies
 - Deterministic fictional seed data for departments, users, employees, leave types, balances, and leave requests
-
-Leave filing, request history, approvals, balance updates, employee management, reports, and support are intentionally reserved for later phases.
 
 ## Run locally
 
@@ -26,9 +27,9 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-Supabase variables may remain blank for Phase 1. The signed demo-auth mode works without an external service so the prototype is immediately demonstrable. Set a long random `DEMO_SESSION_SECRET` before deploying.
+Configure Supabase to exercise the complete leave workflow. Signed demo authentication remains available if Supabase is temporarily unavailable, while live-data pages show safe unavailable or fallback states. Set a unique `DEMO_SESSION_SECRET` containing at least 32 characters before running a production build.
 
-## Phase 1 routes
+## Application routes
 
 Employee routes:
 
@@ -45,7 +46,7 @@ Management routes for Supervisor and Admin:
 - `/admin/reports`
 - `/admin/support`
 
-Only dashboard summaries are populated in Phase 1. The remaining pages are protected, responsive placeholders for later approved phases.
+All listed routes are protected on the server and include responsive desktop, tablet, and mobile layouts.
 
 ## Demo accounts
 
@@ -59,9 +60,10 @@ All demo accounts use the password `Demo123!`.
 
 ## Supabase setup
 
-The Supabase foundation lives in:
+The Supabase schema and workflow migrations live in:
 
 - `supabase/migrations/20260824000000_phase_one_foundation.sql`
+- `supabase/migrations/20260824010000_phase_three_review_workflow.sql`
 - `supabase/seed.sql`
 - `supabase/config.toml`
 
@@ -74,7 +76,7 @@ supabase db reset
 
 Then copy the local API URL and anonymous key into `.env.local`. For a hosted project, apply the migration and seed through the standard Supabase CLI workflow, then set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in the deployment environment.
 
-To let the server-side demo dashboard read the hosted seed while using the signed demo-auth mode, also configure `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. The service-role key is server-only and must never use a `NEXT_PUBLIC_` prefix. If these values are omitted, the dashboards use deterministic in-app demo data matching `supabase/seed.sql`. If a configured database becomes unavailable, the UI displays a safe fallback notice without exposing the underlying error.
+To let protected server actions and pages use the hosted demo database, also configure `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. The service-role key is server-only and must never use a `NEXT_PUBLIC_` prefix. If these values are omitted or the configured database becomes unavailable, the UI shows safe fallback or unavailable states without exposing the underlying error.
 
 The fixed IDs in the application demo identities match the seeded `public.app_users` records. The optional `auth_user_id` column is ready to link those profiles to Supabase Auth when hosted authentication replaces demo-auth mode.
 

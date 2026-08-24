@@ -11,7 +11,19 @@ const SESSION_DURATION_SECONDS = 60 * 60 * 8;
 const DEVELOPMENT_SECRET = "lms-phase-one-local-demo-session-key-2026";
 
 function getSigningSecret() {
-  return process.env.DEMO_SESSION_SECRET || DEVELOPMENT_SECRET;
+  const configuredSecret = process.env.DEMO_SESSION_SECRET;
+  if (configuredSecret) {
+    if (process.env.NODE_ENV === "production" && configuredSecret.length < 32) {
+      throw new Error(
+        "DEMO_SESSION_SECRET must contain at least 32 characters in production.",
+      );
+    }
+    return configuredSecret;
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("DEMO_SESSION_SECRET must be configured in production.");
+  }
+  return DEVELOPMENT_SECRET;
 }
 
 function sign(encodedPayload: string) {
