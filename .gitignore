@@ -1,0 +1,21 @@
+# dependencies
+/node_modules
+
+# Next.js build output
+/.next
+/out
+
+# local environment files
+.env*
+!.env.example
+
+# logs and local tooling
+*.log
+.DS_Store
+*.tsbuildinfo
+.playwright-cli/
+/output/playwright/
+
+# Supabase local development
+/supabase/.branches
+/supabase/.temp

@@ -1,0 +1,31 @@
+{
+  "name": "leave-management-system-demo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/ssr": "0.12.4",
+    "@supabase/supabase-js": "2.112.3",
+    "lucide-react": "0.468.0",
+    "next": "16.3.2",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "22.10.5",
+    "@types/react": "19.0.3",
+    "@types/react-dom": "19.0.2",
+    "eslint": "9.39.2",
+    "eslint-config-next": "16.3.2",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.7.2"
+  }
+}
