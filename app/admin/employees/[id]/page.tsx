@@ -5,29 +5,49 @@ import {
   ArrowLeft,
   BriefcaseBusiness,
   CalendarCheck2,
+  CheckCircle2,
   ClipboardList,
+  History,
   Info,
   UserRound,
   WalletCards,
 } from "lucide-react";
 import { z } from "zod";
 
+import { BalanceEditor } from "@/components/employees/balance-editor";
+import { EmployeeRecordActions } from "@/components/employees/employee-record-actions";
 import { LeaveStatusBadge } from "@/components/leave/status-badge";
 import { requireUser } from "@/lib/auth/guards";
 import { getManagementEmployeeDetail } from "@/lib/db/management-employees";
-import { formatLeaveDateRange, formatSubmittedDate } from "@/lib/leave/dates";
+import {
+  formatLeaveDate,
+  formatLeaveDateRange,
+  formatSubmittedDate,
+  currentManilaDate,
+} from "@/lib/leave/dates";
+import type { EmploymentStatus } from "@/types/database";
 
 export const metadata: Metadata = { title: "Employee Details" };
 
 const employeeIdSchema = z.string().uuid();
 
+function employmentLabel(status: EmploymentStatus) {
+  return status.charAt(0) + status.slice(1).toLowerCase();
+}
+
+function signedDays(value: number) {
+  return `${value > 0 ? "+" : ""}${value}`;
+}
+
 export default async function EmployeeDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ created?: string }>;
 }) {
   const user = await requireUser(["ADMIN", "SUPERVISOR"]);
-  const { id } = await params;
+  const [{ id }, query] = await Promise.all([params, searchParams]);
   if (!employeeIdSchema.safeParse(id).success) notFound();
 
   let employee = null;
@@ -52,6 +72,7 @@ export default async function EmployeeDetailPage({
   }
 
   if (!employee) notFound();
+  const balanceYear = employee.balanceYear;
 
   return (
     <div className="dashboard-page employee-detail-page">
@@ -65,9 +86,16 @@ export default async function EmployeeDetailPage({
         </div>
         <span className={`employment-status employment-status-${employee.employmentStatus.toLowerCase()}`}>
           <span aria-hidden="true" />
-          {employee.employmentStatus === "ACTIVE" ? "Active employee" : "Inactive employee"}
+          {employmentLabel(employee.employmentStatus)} employee
         </span>
       </div>
+
+      {query.created === "1" && (
+        <div className="success-notice" role="status">
+          <CheckCircle2 size={19} />
+          <span><strong>Employee record created.</strong> No login credentials were provisioned.</span>
+        </div>
+      )}
 
       <section className="employee-profile-card" aria-labelledby="employee-profile-title">
         <div className="review-card-heading">
@@ -80,9 +108,12 @@ export default async function EmployeeDetailPage({
         <div className="employee-profile-grid">
           <div><span>Employee ID</span><strong>{employee.employeeNumber}</strong></div>
           <div><span>Full name</span><strong>{employee.fullName}</strong></div>
+          <div><span>Email</span><strong>{employee.email}</strong></div>
           <div><span>Department</span><strong>{employee.departmentName}</strong></div>
           <div><span>Position</span><strong>{employee.position}</strong></div>
-          <div><span>Employment status</span><strong>{employee.employmentStatus === "ACTIVE" ? "Active" : "Inactive"}</strong></div>
+          <div><span>Hire date</span><strong>{formatLeaveDate(employee.hireDate)}</strong></div>
+          <div><span>Tenure</span><strong>{employee.tenure}</strong></div>
+          <div><span>Employment status</span><strong>{employmentLabel(employee.employmentStatus)}</strong></div>
           <div>
             <span>Current leave status</span>
             <strong className={employee.currentLeaveStatus === "ON_LEAVE" ? "current-leave-on" : "current-leave-available"}>
@@ -92,13 +123,23 @@ export default async function EmployeeDetailPage({
         </div>
       </section>
 
+      {user.role === "ADMIN" && (
+        <EmployeeRecordActions
+          employeeId={employee.id}
+          employeeName={employee.fullName}
+          hireDate={employee.hireDate}
+          employmentStatus={employee.employmentStatus}
+          currentDate={currentManilaDate()}
+        />
+      )}
+
       <section className="employee-balance-section" aria-labelledby="employee-balances-title">
         <div className="section-heading-row">
           <div>
             <p className="section-kicker">Leave account</p>
             <h2 id="employee-balances-title">Leave balances</h2>
           </div>
-          <span className="summary-year">{employee.balances[0]?.year ?? new Date().getFullYear()}</span>
+          <span className="summary-year">{balanceYear}</span>
         </div>
 
         {employee.balances.length === 0 ? (
@@ -117,15 +158,82 @@ export default async function EmployeeDetailPage({
                   <span className="employee-balance-icon"><WalletCards size={19} /></span>
                   <div>
                     <span>{balance.name}</span>
-                    <strong>{balance.remainingDays} <small>/ {balance.allocatedDays} days</small></strong>
+                    <strong>{balance.remainingDays} <small>days available</small></strong>
                   </div>
-                  <div className="employee-balance-progress" aria-label={`${Math.round(availablePercent)} percent available`}>
+                  <div className="employee-balance-progress" aria-label={`${Math.round(availablePercent)} percent of entitlement available`}>
                     <span style={{ width: `${availablePercent}%` }} />
                   </div>
-                  <small>{balance.usedDays} days used · {Math.round(availablePercent)}% available</small>
+                  <dl className="employee-balance-breakdown">
+                    <div><dt>Entitled</dt><dd>{balance.allocatedDays}</dd></div>
+                    <div><dt>Used</dt><dd>{balance.usedDays}</dd></div>
+                    <div><dt>Adjusted</dt><dd>{signedDays(balance.adjustmentDays)}</dd></div>
+                  </dl>
+                  <small>Updated {formatSubmittedDate(balance.updatedAt)}</small>
+                  {user.role === "ADMIN" && (
+                    <BalanceEditor
+                      employeeId={employee.id}
+                      year={balance.year}
+                      leaveType={{ id: balance.leaveTypeId, name: balance.name, defaultDays: balance.allocatedDays }}
+                      balance={balance}
+                    />
+                  )}
                 </article>
               );
             })}
+          </div>
+        )}
+
+        {user.role === "ADMIN" && employee.availableLeaveTypes.length > 0 && (
+          <div className="employee-add-balances">
+            <span>Add another current-year balance:</span>
+            {employee.availableLeaveTypes.map((leaveType) => (
+              <BalanceEditor
+                key={leaveType.id}
+                employeeId={employee.id}
+                year={balanceYear}
+                leaveType={leaveType}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="employee-history-card" aria-labelledby="employee-adjustment-title">
+        <div className="directory-heading">
+          <div>
+            <p className="section-kicker">Balance activity</p>
+            <h2 id="employee-adjustment-title">Adjustment history</h2>
+          </div>
+          <History size={20} />
+        </div>
+        {employee.adjustments.length === 0 ? (
+          <div className="leave-empty-state employee-history-empty">
+            <History size={27} />
+            <h2>No manual adjustments</h2>
+            <p>Changes made through balance editing will appear here.</p>
+          </div>
+        ) : (
+          <div className="request-table-wrap">
+            <table className="request-table employee-adjustment-table">
+              <thead>
+                <tr>
+                  <th>Date</th><th>Leave Type</th><th>Entitlement</th><th>Available</th><th>Difference</th><th>Reason</th><th>Updated By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employee.adjustments.map((adjustment) => (
+                  <tr key={adjustment.id}>
+                    <td data-label="Date">{formatSubmittedDate(adjustment.createdAt)}</td>
+                    <td data-label="Leave Type"><strong>{adjustment.leaveTypeName}</strong><small>{adjustment.year}</small></td>
+                    <td data-label="Entitlement">{adjustment.previousEntitlement} → {adjustment.newEntitlement}</td>
+                    <td data-label="Available">{adjustment.previousAvailable} → {adjustment.newAvailable}</td>
+                    <td data-label="Difference"><strong>{signedDays(adjustment.adjustment)} days</strong></td>
+                    <td data-label="Reason" className="employee-history-reason">{adjustment.reason}</td>
+                    <td data-label="Updated By">{adjustment.updatedBy}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </section>
@@ -133,8 +241,8 @@ export default async function EmployeeDetailPage({
       <section className="employee-history-card" aria-labelledby="employee-history-title">
         <div className="directory-heading">
           <div>
-            <p className="section-kicker">Recent activity</p>
-            <h2 id="employee-history-title">Recent leave requests</h2>
+            <p className="section-kicker">Leave activity</p>
+            <h2 id="employee-history-title">Leave request history</h2>
           </div>
           <ClipboardList size={20} />
         </div>
@@ -150,13 +258,7 @@ export default async function EmployeeDetailPage({
             <table className="request-table employee-history-table">
               <thead>
                 <tr>
-                  <th>Leave Type</th>
-                  <th>Dates</th>
-                  <th>Days</th>
-                  <th>Reason</th>
-                  <th>Submitted</th>
-                  <th>Status</th>
-                  <th>Action</th>
+                  <th>Leave Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Submitted</th><th>Status</th><th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -168,11 +270,7 @@ export default async function EmployeeDetailPage({
                     <td data-label="Reason" className="employee-history-reason">{request.reason}</td>
                     <td data-label="Submitted">{formatSubmittedDate(request.createdAt)}</td>
                     <td data-label="Status"><LeaveStatusBadge status={request.status} /></td>
-                    <td data-label="Action">
-                      <Link href={`/admin/requests/${request.id}`} className="review-link">
-                        View request
-                      </Link>
-                    </td>
+                    <td data-label="Action"><Link href={`/admin/requests/${request.id}`} className="review-link">View request</Link></td>
                   </tr>
                 ))}
               </tbody>

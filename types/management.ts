@@ -8,16 +8,42 @@ export type ManagementEmployeeBalance = {
   year: number;
   allocatedDays: number;
   usedDays: number;
+  adjustmentDays: number;
   remainingDays: number;
+  updatedAt: string;
+};
+
+export type ManagementLeaveType = {
+  id: string;
+  code: string;
+  name: string;
+  defaultDays: number;
+};
+
+export type LeaveBalanceAdjustment = {
+  id: string;
+  leaveTypeName: string;
+  year: number;
+  previousEntitlement: number;
+  newEntitlement: number;
+  previousAvailable: number;
+  newAvailable: number;
+  adjustment: number;
+  reason: string;
+  updatedBy: string;
+  createdAt: string;
 };
 
 export type ManagementEmployeeSummary = {
   id: string;
   employeeNumber: string;
   fullName: string;
+  email: string;
   departmentId: string;
   departmentName: string;
   position: string;
+  hireDate: string;
+  tenure: string;
   employmentStatus: EmploymentStatus;
   currentLeaveStatus: "AVAILABLE" | "ON_LEAVE";
   vacationBalance: ManagementEmployeeBalance | null;
@@ -25,14 +51,62 @@ export type ManagementEmployeeSummary = {
 };
 
 export type ManagementEmployeeDetail = ManagementEmployeeSummary & {
+  balanceYear: number;
   balances: ManagementEmployeeBalance[];
   recentRequests: EmployeeLeaveRequest[];
+  adjustments: LeaveBalanceAdjustment[];
+  availableLeaveTypes: ManagementLeaveType[];
 };
 
 export type EmployeeDirectoryData = {
   employees: ManagementEmployeeSummary[];
   departments: { id: string; name: string }[];
   balanceYear: number;
+};
+
+export type EmployeeManagementSetup = {
+  departments: { id: string; name: string }[];
+  leaveTypes: ManagementLeaveType[];
+  balanceYear: number;
+  currentDate: string;
+};
+
+export type EmployeeManagementActionState = {
+  status: "idle" | "success" | "error";
+  message: string;
+};
+
+export type BalanceAdjustmentActionState = EmployeeManagementActionState & {
+  fieldErrors?: Partial<Record<"entitlement" | "available" | "reason", string[]>>;
+  values?: { entitlement: string; available: string; reason: string };
+};
+
+export type CreateEmployeeActionState = EmployeeManagementActionState & {
+  fieldErrors?: Partial<
+    Record<
+      | "employeeNumber"
+      | "firstName"
+      | "lastName"
+      | "email"
+      | "departmentId"
+      | "position"
+      | "hireDate"
+      | "employmentStatus"
+      | "balances",
+      string[]
+    >
+  >;
+  values?: {
+    employeeNumber: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    departmentId: string;
+    position: string;
+    hireDate: string;
+    employmentStatus: string;
+    balances: Record<string, { entitlement: string; available: string }>;
+  };
 };
 
 export const REPORT_RANGES = ["THIS_MONTH", "LAST_MONTH", "THIS_YEAR"] as const;

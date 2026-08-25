@@ -6,7 +6,7 @@ export type LeaveRequestStatus =
   | "REJECTED"
   | "CANCELLED";
 
-export type EmploymentStatus = "ACTIVE" | "INACTIVE";
+export type EmploymentStatus = "ACTIVE" | "INACTIVE" | "RESIGNED";
 
 export type AppUserRecord = {
   id: string;
@@ -34,6 +34,7 @@ export type EmployeeRecord = {
   last_name: string;
   department_id: string;
   position: string;
+  hire_date: string;
   employment_status: EmploymentStatus;
   created_at: string;
   updated_at: string;

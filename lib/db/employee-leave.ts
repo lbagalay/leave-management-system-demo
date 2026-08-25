@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { EmploymentStatus } from "@/types/database";
 import type {
   EmployeeLeaveBalance,
   EmployeeLeaveRequest,
@@ -15,7 +16,7 @@ type RawBalance = {
   year: number;
   allocated_days: number | string;
   used_days: number | string;
-  remaining_days: number | string;
+  available_days: number | string;
   leave_types: { code: string; name: string } | { code: string; name: string }[];
 };
 type RawRequest = {
@@ -53,6 +54,36 @@ export async function getEmployeeIdentity(userId: string) {
   return result.data as EmployeeIdentity | null;
 }
 
+async function getEmployeeRecordIdentity(userId: string) {
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) return null;
+
+  const result = await supabase
+    .from("employees")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (result.error) throw new Error("Employee profile unavailable");
+  return result.data as EmployeeIdentity | null;
+}
+
+export async function getEmployeeEmploymentStatus(
+  userId: string,
+): Promise<EmploymentStatus | null> {
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) return null;
+
+  const result = await supabase
+    .from("employees")
+    .select("employment_status")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (result.error) throw new Error("Employee profile unavailable");
+  return (result.data?.employment_status as EmploymentStatus | undefined) ?? null;
+}
+
 export async function getLeaveFormData(
   userId: string,
   year: number,
@@ -72,7 +103,7 @@ export async function getLeaveFormData(
     supabase
       .from("leave_balances")
       .select(
-        "leave_type_id, year, allocated_days, used_days, remaining_days, leave_types!inner(code, name)",
+        "leave_type_id, year, allocated_days, used_days, available_days, leave_types!inner(code, name)",
       )
       .eq("employee_id", employee.id)
       .eq("year", year),
@@ -100,7 +131,7 @@ export async function getLeaveFormData(
         name: leaveType.name,
         allocatedDays: numeric(balance.allocated_days),
         usedDays: numeric(balance.used_days),
-        remainingDays: numeric(balance.remaining_days),
+        remainingDays: numeric(balance.available_days),
         year: balance.year,
       };
     },
@@ -113,7 +144,7 @@ export async function getEmployeeLeaveRequests(userId: string) {
   const supabase = getSupabaseAdminClient();
   if (!supabase) return null;
 
-  const employee = await getEmployeeIdentity(userId);
+  const employee = await getEmployeeRecordIdentity(userId);
   if (!employee) return null;
 
   const result = await supabase

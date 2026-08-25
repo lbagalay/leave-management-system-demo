@@ -4,7 +4,7 @@
 
 **Goal:** Add hire dates and tenure, editable yearly employee balances with adjustment history, admin-created employee records, and resigned employee handling without changing demo authentication or the current leave approval workflow.
 
-**Architecture:** Extend `employees` and `leave_balances` through one forward-only Supabase migration, add a focused adjustment-history table, and use two transactional PostgreSQL functions for multi-row employee creation and balance adjustment. Keep authorization in the current server actions and fixed demo sessions, extend the existing employee data-access module and pages, and verify the required flow against a reset local Supabase database.
+**Architecture:** Extend `employees` and `leave_balances` through one forward-only Supabase migration, add a focused adjustment-history table, and use two transactional PostgreSQL functions for multi-row employee creation and balance adjustment. Keep authorization in the current server actions and fixed demo sessions, extend the existing employee data-access module and pages, and apply the migration to the existing hosted project only after a safe backup and valid database migration access are available.
 
 **Tech Stack:** Next.js 16.3 App Router, React 19 Server Actions, TypeScript 5.7, Zod 3, Supabase/PostgreSQL 17, Tailwind CSS 4, Vitest.
 
@@ -263,10 +263,8 @@ alter table public.employees alter column hire_date set not null;
 
 alter table public.leave_balances
   add column if not exists adjustment_days numeric(7,2) not null default 0;
-alter table public.leave_balances drop constraint if exists leave_balances_check;
-alter table public.leave_balances drop column remaining_days;
 alter table public.leave_balances
-  add column remaining_days numeric generated always as
+  add column available_days numeric generated always as
     (allocated_days - used_days + adjustment_days) stored,
   add constraint leave_balances_available_nonnegative
     check (allocated_days - used_days + adjustment_days >= 0);
@@ -529,7 +527,7 @@ Keep all leave requests visible and add an adjustment-history table with date, t
 
 - [ ] **Step 7: Add explicit submission blocking UI**
 
-In `app/employee/leave/new/page.tsx`, load `getEmployeeEmploymentStatus` before form data. For `RESIGNED` or `INACTIVE`, render the existing empty-state card with a status-specific heading and the message that only active employees can submit new requests. Do not render `LeaveRequestForm`. Keep `submitLeaveRequestAction` unchanged so its active employee lookup remains the authoritative server-side block.
+In `app/employee/leave/new/page.tsx`, load `getEmployeeEmploymentStatus` before form data. For `RESIGNED` or `INACTIVE`, render the existing empty-state card with a status-specific heading and the message that only active employees can submit new requests. Do not render `LeaveRequestForm`. Keep its active employee lookup and add a database insert trigger that locks and verifies the employee row as the authoritative race-safe block.
 
 - [ ] **Step 8: Add only the required styles**
 
@@ -565,9 +563,11 @@ git commit -m "feat: add scoped employee balance administration"
 **Interfaces:**
 - Verifies all interfaces produced by Tasks 1–4 together.
 
-- [ ] **Step 1: Reset the local database and rerun database tests**
+- [ ] **Step 1: Back up the hosted database and apply the forward-only migration**
 
-Run:
+After valid database migration access is available, back up the confirmed LMS project and apply only the new forward migration. Do not reset or reseed the hosted database. Then run the transactional SQL verification against that schema.
+
+The local Docker reset commands below are superseded for this device:
 
 ```bash
 npx supabase db reset
@@ -576,7 +576,7 @@ npx supabase test db supabase/tests/leave_balance_employee_management.test.sql
 
 Expected: migrations, seed, and all pgTAP assertions pass.
 
-- [ ] **Step 2: Start the app against local Supabase**
+- [ ] **Step 2: Start the app against the confirmed hosted Supabase project**
 
 Use values from `npx supabase status -o env` to start `npm run dev` with server URL/service-role and public URL/anon-key environment variables. Do not commit local credentials.
 

@@ -11,6 +11,9 @@ Phase 5 (Polish, Reliability & Support) of the management-ready Leave Management
 - Employee leave submission, request history, cancellation, and profile views
 - Supervisor/Admin approval and rejection with atomic balance updates
 - Employee directory, employee details, filters, and management reports
+- Admin-created employee records with hire dates, tenure, and initial balances (no login provisioning)
+- Individual entitlement/availability editing with basic adjustment history
+- Resigned employee handling with preserved profiles and leave history
 - System status, support coverage, and issue reporting
 - Supabase browser/server client configuration
 - Supabase-backed workflows with safe loading, empty, and unavailable states
@@ -64,6 +67,8 @@ The Supabase schema and workflow migrations live in:
 
 - `supabase/migrations/20260824000000_phase_one_foundation.sql`
 - `supabase/migrations/20260824010000_phase_three_review_workflow.sql`
+- `supabase/migrations/20260825000000_leave_balance_employee_management.sql`
+- `supabase/tests/leave_balance_employee_management.test.sql`
 - `supabase/seed.sql`
 - `supabase/config.toml`
 
@@ -74,7 +79,7 @@ supabase start
 supabase db reset
 ```
 
-Then copy the local API URL and anonymous key into `.env.local`. For a hosted project, apply the migration and seed through the standard Supabase CLI workflow, then set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in the deployment environment.
+Then copy the local API URL and anonymous key into `.env.local`. For an existing hosted project, back up and verify the target first, then apply only unapplied migrations through the standard Supabase CLI workflow. Do not rerun the demo seed against a database that contains historical data. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in the deployment environment.
 
 To let protected server actions and pages use the hosted demo database, also configure `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. The service-role key is server-only and must never use a `NEXT_PUBLIC_` prefix. If these values are omitted or the configured database becomes unavailable, the UI shows safe fallback or unavailable states without exposing the underlying error.
 
@@ -83,6 +88,7 @@ The fixed IDs in the application demo identities match the seeded `public.app_us
 ## Verification
 
 ```bash
+npm test
 npm run lint
 npm run typecheck
 npm run build

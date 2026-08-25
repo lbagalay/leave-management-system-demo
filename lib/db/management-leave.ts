@@ -186,7 +186,7 @@ export async function getManagementRequestDetail(
   const [balanceResult, previousResult] = await Promise.all([
     supabase
       .from("leave_balances")
-      .select("remaining_days")
+      .select("available_days")
       .eq("employee_id", request.employeeId)
       .eq("leave_type_id", request.leaveTypeId)
       .eq("year", balanceYear)
@@ -207,7 +207,7 @@ export async function getManagementRequestDetail(
   }
 
   const currentBalance = balanceResult.data
-    ? Number(balanceResult.data.remaining_days)
+    ? Number(balanceResult.data.available_days)
     : null;
   const previousRequests = (previousResult.data as unknown as RawPreviousRequest[]).map(
     (previous): EmployeeLeaveRequest => {

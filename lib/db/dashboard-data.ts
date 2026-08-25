@@ -69,7 +69,7 @@ const ADMIN_DEMO_DATA: AdminDashboardData = {
 type RawBalance = {
   allocated_days: number | string;
   used_days: number | string;
-  remaining_days: number | string;
+  available_days: number | string;
   leave_types:
     | { code: string; name: string }
     | { code: string; name: string }[];
@@ -133,7 +133,7 @@ export async function getEmployeeDashboardData(
     ] = await Promise.all([
       supabase
         .from("leave_balances")
-        .select("allocated_days, used_days, remaining_days, leave_types!inner(code, name)")
+        .select("allocated_days, used_days, available_days, leave_types!inner(code, name)")
         .eq("employee_id", employeeId)
         .in("leave_types.code", ["VACATION", "SICK"]),
       supabase
@@ -185,7 +185,7 @@ export async function getEmployeeDashboardData(
           name: leaveType.name,
           allocatedDays: numeric(balance.allocated_days),
           usedDays: numeric(balance.used_days),
-          remainingDays: numeric(balance.remaining_days),
+          remainingDays: numeric(balance.available_days),
         };
       })
       .filter((balance): balance is LeaveBalanceSummary => balance !== null)

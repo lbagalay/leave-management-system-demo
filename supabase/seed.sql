@@ -24,15 +24,16 @@ on conflict (id) do update set
   role = excluded.role,
   department_id = excluded.department_id;
 
-insert into public.employees (id, user_id, employee_number, first_name, last_name, department_id, position) values
-  ('30000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'EMP-001', 'Juan', 'Dela Cruz', '20000000-0000-0000-0000-000000000001', 'Operations Associate'),
-  ('30000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002', 'EMP-002', 'Maria', 'Santos', '20000000-0000-0000-0000-000000000002', 'Accounting Assistant'),
-  ('30000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003', 'EMP-003', 'Carlo', 'Reyes', '20000000-0000-0000-0000-000000000003', 'Sales Associate'),
-  ('30000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000004', 'EMP-004', 'Andrea', 'Lim', '20000000-0000-0000-0000-000000000001', 'Operations Supervisor')
+insert into public.employees (id, user_id, employee_number, first_name, last_name, department_id, position, hire_date) values
+  ('30000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'EMP-001', 'Juan', 'Dela Cruz', '20000000-0000-0000-0000-000000000001', 'Operations Associate', '2024-01-10'),
+  ('30000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002', 'EMP-002', 'Maria', 'Santos', '20000000-0000-0000-0000-000000000002', 'Accounting Assistant', '2025-06-15'),
+  ('30000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003', 'EMP-003', 'Carlo', 'Reyes', '20000000-0000-0000-0000-000000000003', 'Sales Associate', '2023-03-01'),
+  ('30000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000004', 'EMP-004', 'Andrea', 'Lim', '20000000-0000-0000-0000-000000000001', 'Operations Supervisor', '2021-11-08')
 on conflict (id) do update set
   employee_number = excluded.employee_number,
   position = excluded.position,
-  department_id = excluded.department_id;
+  department_id = excluded.department_id,
+  hire_date = excluded.hire_date;
 
 update public.app_users set employee_id = case id
   when '10000000-0000-0000-0000-000000000001' then '30000000-0000-0000-0000-000000000001'::uuid

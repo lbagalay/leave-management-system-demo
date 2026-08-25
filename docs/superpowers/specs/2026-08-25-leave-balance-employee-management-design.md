@@ -48,7 +48,7 @@ Keep the existing yearly `leave_balances` table and its meanings:
 - `allocated_days` is the editable entitlement.
 - `used_days` is leave consumed by approved requests and is not directly editable.
 - Add `adjustment_days`, defaulting to zero, for manual availability adjustments.
-- Recalculate generated `remaining_days` as `allocated_days - used_days + adjustment_days`.
+- Preserve the existing generated `remaining_days` compatibility column and add generated `available_days` as `allocated_days - used_days + adjustment_days`.
 
 Existing balances retain the same entitlement, usage, and availability because their new adjustment is zero. Validation requires non-negative entitlement, usage, and resulting availability. An administrator may set availability above entitlement when the adjustment represents carryover or another manual increase.
 
@@ -58,7 +58,7 @@ When an administrator enters a desired entitlement and desired available balance
 adjustment_days = desired_available - desired_entitlement + used_days
 ```
 
-The approval function remains otherwise unchanged: it continues to compare the request with generated `remaining_days` and increment only `used_days` after approval. Pending, rejected, and cancelled requests do not change balances.
+The approval function remains otherwise unchanged: it compares the request with generated `available_days` and increments only `used_days` after approval. Pending, rejected, and cancelled requests do not change balances.
 
 ### Balance adjustment history
 
@@ -126,7 +126,7 @@ Supervisors see the same employee details and history within their existing depa
 
 Changing status to `RESIGNED` does not delete or modify leave requests, balances, or adjustment records. The employee disappears from the default active directory but remains available through the `All Employees` and `Resigned` filters and retains a working detail page.
 
-The current employee lookup already requires `ACTIVE` status before inserting a leave request. Keep that server-side enforcement and add status-aware UI messaging so a resigned or inactive fixed demo employee is not shown an actionable new-request form. Reactivation changes the status back to `ACTIVE` without altering historical records or balances.
+The current employee lookup already requires `ACTIVE` status before inserting a leave request. Keep that server-side enforcement, add a database insert guard that locks and verifies the employee row to close resignation races, and add status-aware UI messaging so a resigned or inactive fixed demo employee is not shown an actionable new-request form. Reactivation changes the status back to `ACTIVE` without altering historical records or balances.
 
 ## Authorization and Error Handling
 
@@ -149,4 +149,4 @@ Implementation follows test-first development. Automated coverage will include:
 - Reactivation restoring active status.
 - Admin-only mutations and supervisor read-only behavior.
 
-Final verification will run lint, TypeScript checking, production build, database reset/migration tests, and a browser walkthrough of the required admin flow: create an employee, confirm hire date and tenure, edit a balance and view its history, approve leave and observe the deduction, resign the employee, confirm active-list removal, and reopen the historical record through the resigned filter.
+Final local verification will run focused tests, lint, TypeScript checking, and a production build. The hosted migration and browser walkthrough require database migration access; when available, the walkthrough covers creating an employee, confirming hire date and tenure, editing a balance and viewing its history, approving leave and observing the deduction, resigning the employee, confirming active-list removal, and reopening the historical record through the resigned filter.

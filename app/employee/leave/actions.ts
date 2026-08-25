@@ -96,7 +96,7 @@ export async function submitLeaveRequestAction(
         .maybeSingle(),
       supabase
         .from("leave_balances")
-        .select("remaining_days")
+        .select("available_days")
         .eq("employee_id", employee.id)
         .eq("leave_type_id", leaveTypeId)
         .eq("year", year)
@@ -134,7 +134,7 @@ export async function submitLeaveRequestAction(
       };
     }
 
-    const remainingDays = Number(balanceResult.data.remaining_days);
+    const remainingDays = Number(balanceResult.data.available_days);
     if (!Number.isFinite(remainingDays) || numberOfDays > remainingDays) {
       return {
         message: `This request exceeds your available balance of ${remainingDays} days.`,
@@ -159,6 +159,12 @@ export async function submitLeaveRequestAction(
       if (insertResult.error.code === "23505") {
         return {
           message: "An active request already exists for this leave type and date range.",
+          values: rawValues,
+        };
+      }
+      if (insertResult.error.code === "23514") {
+        return {
+          message: "Only active employees can submit new leave requests.",
           values: rawValues,
         };
       }

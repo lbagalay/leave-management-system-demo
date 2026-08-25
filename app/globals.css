@@ -3078,7 +3078,7 @@ summary:focus-visible {
 }
 
 .employee-directory-table {
-  min-width: 1120px;
+  min-width: 1260px;
 }
 
 .employee-directory-table th,
@@ -3146,12 +3146,171 @@ summary:focus-visible {
   background: var(--ink-400);
 }
 
+.employment-status-resigned {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: #efcccc;
+}
+
+.employment-status-resigned > span {
+  background: var(--danger);
+}
+
+.employee-create-card {
+  max-width: 980px;
+}
+
+.employee-create-form {
+  padding: 31px;
+}
+
+.employee-create-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 19px;
+}
+
+.employee-create-form .form-field > span:first-child {
+  margin-bottom: 8px;
+  color: var(--ink-700);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.employee-balance-form-heading {
+  margin-top: 31px;
+  padding-top: 27px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.employee-initial-balances {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.employee-initial-balances fieldset {
+  display: grid;
+  margin: 0;
+  padding: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  background: #fbfcfd;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.employee-initial-balances legend {
+  padding: 0 5px;
+  color: var(--navy-900);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.employee-initial-balances label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.employee-initial-balances label span {
+  color: var(--ink-500);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.employee-initial-balances input {
+  width: 100%;
+  height: 42px;
+  padding: 0 11px;
+  color: var(--ink-900);
+  background: #fff;
+  border: 1px solid #cfd9e2;
+  border-radius: 8px;
+}
+
+.employee-balance-errors {
+  display: flex;
+  flex-direction: column;
+}
+
 .employee-detail-heading {
   align-items: center;
 }
 
 .employee-profile-card {
   padding: 24px;
+}
+
+.employee-record-actions {
+  display: flex;
+  margin-top: 18px;
+  padding: 19px 21px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  background: #fbfcfd;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.employee-record-actions h2 {
+  margin: 3px 0 0;
+  color: var(--navy-950);
+  font-size: 15px;
+}
+
+.employee-record-actions p:not(.section-kicker) {
+  margin: 5px 0 0;
+  color: var(--ink-500);
+  font-size: 9px;
+}
+
+.employee-record-action-buttons {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.employee-record-action-buttons button,
+.balance-edit-button,
+.balance-add-button {
+  display: inline-flex;
+  min-height: 36px;
+  padding: 0 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--blue-700);
+  background: #fff;
+  border: 1px solid #abc8dc;
+  border-radius: 7px;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.employee-record-action-buttons .employee-resign-button {
+  color: var(--danger);
+  border-color: #dfa8a8;
+}
+
+.employee-record-action-buttons .employee-reactivate-button {
+  color: var(--success);
+  border-color: #acd8c5;
+}
+
+.employee-action-success {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 6px;
+  color: var(--success);
+  font-size: 9px;
+  grid-column: 1 / -1;
 }
 
 .employee-profile-grid {
@@ -3269,6 +3428,83 @@ summary:focus-visible {
   font-size: 8px;
 }
 
+.employee-balance-breakdown {
+  display: grid;
+  margin: 0;
+  padding: 11px 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  border-bottom: 1px solid var(--line-soft);
+  grid-column: 1 / -1;
+}
+
+.employee-balance-breakdown div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.employee-balance-breakdown dt {
+  color: var(--ink-500);
+  font-size: 7px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.employee-balance-breakdown dd {
+  margin: 0;
+  color: var(--navy-900);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.employee-balance-card .balance-edit-button {
+  margin-top: 3px;
+  grid-column: 1 / -1;
+}
+
+.employee-add-balances {
+  display: flex;
+  margin-top: 14px;
+  padding: 13px 15px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: #fbfcfd;
+  border: 1px dashed #bfd0dc;
+  border-radius: 8px;
+}
+
+.employee-add-balances > span {
+  margin-right: 3px;
+  color: var(--ink-500);
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.balance-edit-grid {
+  display: grid;
+  margin: 18px 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.review-dialog input {
+  width: 100%;
+  height: 42px;
+  padding: 0 11px;
+  color: var(--ink-900);
+  background: #fff;
+  border: 1px solid #cfd9e2;
+  border-radius: 8px;
+}
+
+.review-dialog input:focus {
+  border-color: var(--blue-600);
+  box-shadow: 0 0 0 3px rgba(31, 123, 189, 0.1);
+  outline: 0;
+}
+
 .employee-balance-empty {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -3281,6 +3517,17 @@ summary:focus-visible {
 
 .employee-history-table {
   min-width: 1020px;
+}
+
+.employee-adjustment-table {
+  min-width: 1120px;
+}
+
+.employee-adjustment-table td small {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-500);
+  font-size: 8px;
 }
 
 .employee-history-reason {
@@ -3408,6 +3655,10 @@ summary:focus-visible {
   .employee-balance-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .employee-initial-balances {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
@@ -3439,6 +3690,7 @@ summary:focus-visible {
 
   .employee-directory-table,
   .employee-history-table,
+  .employee-adjustment-table,
   .report-table,
   .department-report-table {
     min-width: 0;
@@ -3461,8 +3713,28 @@ summary:focus-visible {
     padding: 20px 18px;
   }
 
+  .employee-create-form {
+    padding: 24px 18px;
+  }
+
   .employee-profile-grid,
-  .employee-balance-grid {
+  .employee-balance-grid,
+  .employee-create-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-record-actions,
+  .employee-record-action-buttons {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .employee-record-action-buttons button {
+    width: 100%;
+  }
+
+  .employee-initial-balances fieldset,
+  .balance-edit-grid {
     grid-template-columns: 1fr;
   }
 

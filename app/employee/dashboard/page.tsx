@@ -76,9 +76,10 @@ export default async function EmployeeDashboardPage() {
         <div className="dashboard-metric-grid employee-metric-grid employee-phase-two-metrics">
           {balances.map((balance) => {
             const Icon = balance.code === "VACATION" ? Palmtree : HeartPulse;
-            const percentage = Math.round(
-              (balance.remainingDays / balance.allocatedDays) * 100,
-            );
+            const percentage = balance.allocatedDays > 0
+              ? Math.round((balance.remainingDays / balance.allocatedDays) * 100)
+              : 0;
+            const trackPercentage = Math.max(0, Math.min(100, percentage));
 
             return (
               <article className="metric-card balance-card" key={balance.code}>
@@ -91,7 +92,7 @@ export default async function EmployeeDashboardPage() {
                   {balance.remainingDays} <small>/ {balance.allocatedDays} days</small>
                 </strong>
                 <div className="balance-track" aria-hidden="true">
-                  <span style={{ width: `${percentage}%` }} />
+                  <span style={{ width: `${trackPercentage}%` }} />
                 </div>
                 <span className="metric-footnote">{balance.usedDays} days used</span>
               </article>

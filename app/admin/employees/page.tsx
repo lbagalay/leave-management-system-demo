@@ -1,25 +1,30 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Search, SlidersHorizontal, UserRoundSearch } from "lucide-react";
+import { ArrowRight, Search, SlidersHorizontal, UserPlus, UserRoundSearch } from "lucide-react";
 
 import { requireUser } from "@/lib/auth/guards";
 import { getManagementEmployeeDirectory } from "@/lib/db/management-employees";
+import { formatLeaveDate } from "@/lib/leave/dates";
 import type { EmploymentStatus } from "@/types/database";
 
 export const metadata: Metadata = { title: "Employees" };
 
-const EMPLOYMENT_FILTERS = ["ALL", "ACTIVE", "INACTIVE"] as const;
+const EMPLOYMENT_FILTERS = ["ALL", "ACTIVE", "RESIGNED", "INACTIVE"] as const;
 type EmploymentFilter = (typeof EMPLOYMENT_FILTERS)[number];
 
 function employmentFilter(value: string | undefined): EmploymentFilter {
   const normalized = value?.toUpperCase();
   return EMPLOYMENT_FILTERS.includes(normalized as EmploymentFilter)
     ? (normalized as EmploymentFilter)
-    : "ALL";
+    : "ACTIVE";
 }
 
 function balanceLabel(value: number | null) {
   return value === null ? "Not assigned" : `${value} days`;
+}
+
+function employmentLabel(status: EmploymentStatus) {
+  return status.charAt(0) + status.slice(1).toLowerCase();
 }
 
 export default async function EmployeesPage({
@@ -52,6 +57,7 @@ export default async function EmployeesPage({
         [
           employee.employeeNumber,
           employee.fullName,
+          employee.email,
           employee.departmentName,
           employee.position,
         ].some((value) =>
@@ -78,9 +84,13 @@ export default async function EmployeesPage({
               : "View employee profiles and leave balances across the company."}
           </p>
         </div>
-        <span className="role-badge">
-          {user.role === "ADMIN" ? "Company-wide" : `${user.department ?? "Department"} team`}
-        </span>
+        {user.role === "ADMIN" ? (
+          <Link href="/admin/employees/new" className="page-action-link">
+            <UserPlus size={16} /> Add employee
+          </Link>
+        ) : (
+          <span className="role-badge">{user.department ?? "Department"} team</span>
+        )}
       </div>
 
       <section className="employee-directory-card" aria-labelledby="employee-directory-title">
@@ -123,8 +133,9 @@ export default async function EmployeesPage({
           <label>
             <span>Status</span>
             <select name="status" defaultValue={selectedStatus}>
-              <option value="ALL">All statuses</option>
+              <option value="ALL">All Employees</option>
               <option value="ACTIVE">Active</option>
+              <option value="RESIGNED">Resigned</option>
               <option value="INACTIVE">Inactive</option>
             </select>
           </label>
@@ -155,8 +166,9 @@ export default async function EmployeesPage({
                   <th>Name</th>
                   <th>Department</th>
                   <th>Position</th>
-                  <th>Vacation Balance</th>
-                  <th>Sick Balance</th>
+                  <th>Hire Date</th>
+                  <th>Tenure</th>
+                  <th>Leave Balances</th>
                   <th>Status</th>
                   <th>Action</th>
                 </tr>
@@ -167,22 +179,20 @@ export default async function EmployeesPage({
                     <td data-label="Employee ID"><strong>{employee.employeeNumber}</strong></td>
                     <td data-label="Name" className="management-employee-cell">
                       <strong>{employee.fullName}</strong>
-                      <small>{employee.currentLeaveStatus === "ON_LEAVE" ? "Currently on leave" : "Available"}</small>
+                      <small>{employee.email}</small>
                     </td>
                     <td data-label="Department">{employee.departmentName}</td>
                     <td data-label="Position">{employee.position}</td>
-                    <td data-label="Vacation Balance" className="directory-balance-cell">
-                      <strong>{balanceLabel(employee.vacationBalance?.remainingDays ?? null)}</strong>
-                      {employee.vacationBalance && <small>{employee.vacationBalance.usedDays} used</small>}
-                    </td>
-                    <td data-label="Sick Balance" className="directory-balance-cell">
-                      <strong>{balanceLabel(employee.sickBalance?.remainingDays ?? null)}</strong>
-                      {employee.sickBalance && <small>{employee.sickBalance.usedDays} used</small>}
+                    <td data-label="Hire Date">{formatLeaveDate(employee.hireDate)}</td>
+                    <td data-label="Tenure">{employee.tenure}</td>
+                    <td data-label="Leave Balances" className="directory-balance-cell">
+                      <strong>Vacation: {balanceLabel(employee.vacationBalance?.remainingDays ?? null)}</strong>
+                      <small>Sick: {balanceLabel(employee.sickBalance?.remainingDays ?? null)}</small>
                     </td>
                     <td data-label="Status">
                       <span className={`employment-status employment-status-${employee.employmentStatus.toLowerCase()}`}>
                         <span aria-hidden="true" />
-                        {employee.employmentStatus === "ACTIVE" ? "Active" : "Inactive"}
+                        {employmentLabel(employee.employmentStatus)}
                       </span>
                     </td>
                     <td data-label="Action">
