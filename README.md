@@ -68,6 +68,7 @@ The Supabase schema and workflow migrations live in:
 - `supabase/migrations/20260824000000_phase_one_foundation.sql`
 - `supabase/migrations/20260824010000_phase_three_review_workflow.sql`
 - `supabase/migrations/20260825000000_leave_balance_employee_management.sql`
+- `supabase/migrations/20260825010000_fix_employee_record_citext.sql`
 - `supabase/tests/leave_balance_employee_management.test.sql`
 - `supabase/seed.sql`
 - `supabase/config.toml`
