@@ -51,19 +51,20 @@ export function LeaveRequestForm({ data }: { data: LeaveFormData }) {
             required
           >
             <option value="">Select a leave type</option>
-            {data.leaveTypes.map((leaveType) => {
-              const hasBalance = data.balances.some(
-                (balance) => balance.leaveTypeId === leaveType.id,
-              );
-              return (
+            {data.leaveTypes
+              .filter((leaveType) =>
+                data.balances.some(
+                  (balance) => balance.leaveTypeId === leaveType.id,
+                ),
+              )
+              .map((leaveType) => (
                 <option value={leaveType.id} key={leaveType.id}>
-                  {leaveType.name}{hasBalance ? "" : " — no allocation"}
+                  {leaveType.name}
                 </option>
-              );
-            })}
+              ))}
           </select>
           <small id="leave-type-help">
-            Vacation and Sick Leave are available for the employee demo account.
+            Only leave types with an assigned {data.year} balance are shown.
           </small>
           {state.fieldErrors?.leaveTypeId && (
             <span className="field-error" id="leaveTypeId-error">
