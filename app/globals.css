@@ -2139,6 +2139,7 @@ summary:focus-visible {
 .review-dialog {
   width: min(92vw, 465px);
   max-height: 90vh;
+  margin: auto;
   padding: 0;
   color: var(--ink-900);
   background: transparent;
